@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Product List</title>
+	<script src="react.js"></script>
+	<script src="react-dom.js"></script>
+	<script src="babel.min.js"></script>
+	<script type="text/babel">
+		class EventEmitter{
+			_listeners = [];
+
+			subscribe(listenerFn){
+				this._listeners.push(listenerFn);
+			}
+			triggerChange(){
+				this._listeners.forEach(listenerFn => listenerFn());
+			}
+		}
+
+		class ProductsCollection extends EventEmitter{
+			list = [];
+			addNew(productName){
+				this.list.push(productName);
+				this.triggerChange();
+			}
+			getAll(){
+				return [...this.list];
+			}
+		}
+
+		class ProductList extends React.Component{
+			state = { newProductName : ''}
+			constructor(props){
+				super(props);
+				this.onAddNewClick = this.onAddNewClick.bind(this);
+			}
+			onAddNewClick(){
+				this.props.model.addNew(this.state.newProductName);
+			}
+			render(){
+				let products = this.props.model.getAll();
+				let productItems = products.map((product, index) => (<li key={index}>{product}</li>));
+				return(
+					<div>
+						<label>Product Name </label>
+						<input type="text" onChange={evt => this.setState({newProductName : evt.target.value})} />
+						<input value="Add New" type="button" onClick={this.onAddNewClick} />
+						<ol>
+							{productItems}
+						</ol>
+					</div>
+				)
+			}
+		}
+		class ProductCount extends React.Component{
+			render(){
+				return(
+					<div>
+						<label>Count : </label>
+						<span>{this.props.data}</span>
+					</div>
+				);
+			}
+		}
+		let productsCollection = new ProductsCollection();
+		function renderApp(){
+			let count = productsCollection.getAll().length;
+			ReactDOM.render(
+
+				<div>
+					<ProductCount data={count} />
+					<ProductList model={productsCollection}/>
+				</div>,
+				document.getElementById('root'));
+		}
+		productsCollection.subscribe(renderApp);
+		renderApp();
+	</script>
+</head>
+<body>
+	<h1>Products</h1>
+	<hr/>
+	<div id="root"></div>
+</body>
+</html>

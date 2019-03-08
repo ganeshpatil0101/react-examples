@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Bug Tracker</title>
+	<style>
+		body{
+			margin-left: 50px;
+		}
+		section{
+			margin-bottom: 10px;
+		}
+		.stats, .bugname{
+			font-size: 20pt;
+		}
+		.closed{
+			color : red;
+			text-decoration: line-through;
+			font-style: italic;
+			font-weight: bold;
+		}
+		.bugname{
+			cursor: pointer;
+		}
+		ol{
+			width: 500px;
+			list-style: none;
+			-webkit-padding-start : 0px;
+		}
+		li{
+			border: 1px solid gray;
+			background-color: #e7e7e7;
+			border-radius: 5px;
+			padding: 10px;
+			margin-bottom: 10px;
+		}
+	
+		.datetime{
+			font-style: italic;
+		}
+	</style>
+	<script type="text/usecases">
+		1. Add new bugs
+		2. List the bugs
+		3. Toggle the 'closed' status of any bug
+		4. Remove closed bugs
+		5. Display stats (# of closed bugs / total # of bugs)
+		6. Sort the bugs
+		7. Persist the bugs in the server
+		8. make the bugs accessible using unique urls
+	</script>
+	<script src="react.js"></script>
+	<script src="react-dom.js"></script>
+	<script src="babel.min.js"></script>
+	
+	<script type="text/babel">
+	class EventEmitter{
+			_listeners = [];
+
+			subscribe(listenerFn){
+				this._listeners.push(listenerFn);
+			}
+			triggerChange(){
+				this._listeners.forEach(listenerFn => listenerFn());
+			}
+		}
+
+		class BugTrackerModel extends EventEmitter{
+			list = [{name:"Test Test",closed:false,createdAt:new Date()},
+			{name:"Test 123",closed:false,createdAt:new Date()}];
+			addBug(bugName){
+				this.list.push({name:bugName,closed:false,createdAt:new Date()});
+				this.triggerChange();
+			}
+			getAll(){
+				return [...this.list];
+			}
+			getTotalBugCount(){
+				return this.list.length;
+			}
+			getTotalClosedBug(){
+				return 1;
+			}
+			toggleCloseState(index) {
+				this.list[index].closed = !this.list[index].closed;
+				this.triggerChange();
+			}
+		}
+		class BugTracker extends React.Component{
+			state = {bugName:''};
+			constructor(){
+				super();
+				this.onAddBug = this.onAddBug.bind(this);
+				this.toggleCloseState = this.toggleCloseState.bind(this);
+			}
+			onAddBug(){
+				this.props.bugTracker.addBug(this.state.bugName);
+			}
+			toggleCloseState(index) {
+				this.props.bugTracker.toggleCloseState(index.index);
+			}
+			render(){
+				bugTracker = this.props.bugTracker;
+				return(
+					<div>
+						<BugStats totalCount={bugTracker.getTotalBugCount()} closedBug={bugTracker.getTotalClosedBug()} />
+						<section className="sort">
+							<label htmlFor="">Order By :</label>
+							<select>
+								<option value=""></option>
+								<option value=""></option>
+							</select>
+							<label htmlFor="">Descending ? :</label>
+							<input type="checkbox" />
+						</section>
+						<section className="edit">
+							<label htmlFor="">Bug Name :</label>
+							<input type="text" onChange={(evt)=> this.setState({bugName:evt.target.value})} />
+							<input type="button" value="Add New" onClick={this.onAddBug} />
+						</section>
+						<BugList list={bugTracker.getAll()} toggleCloseState={(index)=>this.toggleCloseState(index)} />
+					</div>
+				)
+			}
+		}
+
+		class BugStats extends React.Component{
+			render(){
+				return(
+					<div>
+						<section className="stats">
+							<span className="closed">{this.props.closedBug}</span>
+							<span> / </span>
+							<span>{this.props.totalCount}</span>
+						</section>
+					</div>
+				);
+			}
+		}
+		class BugList extends React.Component{
+			render(){
+				let toggleCloseState = this.props.toggleCloseState;
+				let bugItems = this.props.list.map((bug, index) => (<BugItem key={index} toggleCloseState={(index) => toggleCloseState(index)} index={index} {...bug} />));
+				/*let bugItems = this.props.list.map((bug, index)=>(<li key={index}>
+							<span className="bugname">[{bug.name} - {index} ]</span>
+							<div className="datetime">[{bug.createdAt.toString()}]</div>
+						</li>));*/
+				return(
+					<div>
+						<section className="list">
+							<ol>
+								{bugItems}
+							</ol>
+							<input type="button" value="Remove Closed" />
+						</section>
+					</div>
+				);
+			}
+		}
+		class BugItem extends React.Component{
+			render(){
+				let {name,closed,createdAt,index} = this.props;
+				let clName = (closed) ? "bugname closed" : "bugname";
+				return(
+					<div>
+						<li>
+							<span className={clName} onClick={()=>this.props.toggleCloseState({index})}>[{name} - {index}]</span>
+							<div className="datetime">[{createdAt.toString()}]</div>
+						</li>
+					</div>
+				);
+			}
+		}
+		let bugTracker = new BugTrackerModel();
+		function renderApp() {
+			let count = bugTracker.getAll().length;
+			ReactDOM.render(
+				<div>
+					<BugTracker bugTracker={bugTracker}/>
+				</div>,
+				document.getElementById('root'));
+		}
+		bugTracker.subscribe(renderApp);
+		renderApp();
+	</script>
+	
+</head>
+<body>
+	<h1>Bug Tracker</h1>
+	<hr>
+	<div id="root"></div>
+</body>
+</html>
